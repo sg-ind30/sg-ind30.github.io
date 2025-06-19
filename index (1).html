@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RA Scheduling Tool - Team Edition</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .lucide {
+            width: 1em;
+            height: 1em;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Simple icons as SVG components
+        const Calendar = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+        );
+
+        const Clock = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12,6 12,12 16,14" />
+            </svg>
+        );
+
+        const Users = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+        );
+
+        const Plus = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+        );
+
+        const Trash2 = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <polyline points="3,6 5,6 21,6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+        );
+
+        const RefreshCw = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <polyline points="23,4 23,10 17,10" />
+                <polyline points="1,20 1,14 7,14" />
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+            </svg>
+        );
+
+        const CheckCircle = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22,4 12,14.01 9,11.01" />
+            </svg>
+        );
+
+        const XCircle = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        );
+
+        const FileText = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14,2 14,8 20,8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10,9 9,9 8,9" />
+            </svg>
+        );
+
+        const Download = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7,10 12,15 17,10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+        );
+
+        const Upload = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-15" />
+                <polyline points="17,6 12,1 7,6" />
+                <line x1="12" y1="1" x2="12" y2="13" />
+            </svg>
+        );
+
+        const Save = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17,21 17,13 7,13 7,21" />
+                <polyline points="7,3 7,8 15,8" />
+            </svg>
+        );
+
+        const Exchange = () => (
+            <svg className="lucide" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M16 3h5v5M8 21H3v-5M21 8L3 21M3 3l18 18" />
+            </svg>
+        );
+
+        const TeamSchedulingTool = () => {
+            const [ras, setRAs] = useState([]);
+            const [shifts, setShifts] = useState([]);
+            const [swapRequests, setSwapRequests] = useState([]);
+            const [changeLog, setChangeLog] = useState([]);
+            const [selectedWeek, setSelectedWeek] = useState(getWeekStart(new Date()));
+            const [showAddRA, setShowAddRA] = useState(false);
+            const [showAddShift, setShowAddShift] = useState(false);
+            const [showChangeLog, setShowChangeLog] = useState(false);
+            const [currentUser, setCurrentUser] = useState('Manager');
+            const [teamName, setTeamName] = useState('Research Team');
+            const [newRAName, setNewRAName] = useState('');
+            const [newShift, setNewShift] = useState({
+                day: 'Monday',
+                startTime: '09:00',
+                endTime: '17:00',
+                assignedRA: ''
+            });
+
+            // Use in-memory storage since localStorage isn't available in artifacts
+            const storage = {
+                get: (key) => {
+                    try {
+                        const data = localStorage.getItem(`ra_scheduler_${key}`);
+                        return data ? JSON.parse(data) : [];
+                    } catch (error) {
+                        console.error('Error loading data:', error);
+                        return [];
+                    }
+                },
+                set: (key, value) => {
+                    try {
+                        localStorage.setItem(`ra_scheduler_${key}`, JSON.stringify(value));
+                    } catch (error) {
+                        console.error('Error saving data:', error);
+                    }
+                },
+                export: () => {
+                    return {
+                        teamName,
+                        ras,
+                        shifts,
+                        swapRequests,
+                        changeLog,
+                        exportDate: new Date().toISOString(),
+                        version: '1.0'
+                    };
+                },
+                import: (data) => {
+                    if (data.ras) {
+                        setRAs(data.ras);
+                        storage.set('ras', data.ras);
+                    }
+                    if (data.shifts) {
+                        setShifts(data.shifts);
+                        storage.set('shifts', data.shifts);
+                    }
+                    if (data.swapRequests) {
+                        setSwapRequests(data.swapRequests);
+                        storage.set('swapRequests', data.swapRequests);
+                    }
+                    if (data.changeLog) {
+                        setChangeLog(data.changeLog);
+                        storage.set('changeLog', data.changeLog);
+                    }
+                    if (data.teamName) {
+                        setTeamName(data.teamName);
+                        storage.set('teamName', data.teamName);
+                    }
+                }
+            };
+            // Load data from localStorage on component mount
+            useEffect(() => {
+                const savedRAs = storage.get('ras');
+                const savedShifts = storage.get('shifts');
+                const savedSwapRequests = storage.get('swapRequests');
+                const savedChangeLog = storage.get('changeLog');
+                const savedTeamName = storage.get('teamName');
+
+                if (savedRAs.length > 0) setRAs(savedRAs);
+                if (savedShifts.length > 0) setShifts(savedShifts);
+                if (savedSwapRequests.length > 0) setSwapRequests(savedSwapRequests);
+                if (savedChangeLog.length > 0) setChangeLog(savedChangeLog);
+                if (savedTeamName) setTeamName(savedTeamName);
+            }, []);
+            // Utility function to log changes
+            const logChange = (action, details) => {
+                const logEntry = {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    action,
+                    details,
+                    user: currentUser
+                };
+                const updatedChangeLog = [logEntry, ...changeLog];
+                setChangeLog(updatedChangeLog);
+                storage.set('changeLog', updatedChangeLog);
+            };
+
+            function getWeekStart(date) {
+                const d = new Date(date);
+                const day = d.getDay();
+                const diff = d.getDate() - day;
+                return new Date(d.setDate(diff));
+            }
+
+            function formatDate(date) {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+
+            function formatDateTime(isoString) {
+                return new Date(isoString).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            function getWeekDays(weekStart) {
+                const days = [];
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                for (let i = 0; i < 7; i++) {
+                    const day = new Date(weekStart);
+                    day.setDate(weekStart.getDate() + i);
+                    days.push({
+                        date: day,
+                        name: dayNames[day.getDay()]
+                    });
+                }
+                return days;
+            }
+
+            function calculateHours(startTime, endTime) {
+                const start = new Date(`2000-01-01 ${startTime}`);
+                const end = new Date(`2000-01-01 ${endTime}`);
+                return (end - start) / (1000 * 60 * 60);
+            }
+
+            const exportData = () => {
+                const data = storage.export();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${teamName}_schedule_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                logChange('Data Export', `Schedule data exported by ${currentUser}`);
+            };
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            storage.import(data);
+                            logChange('Data Import', `Schedule data imported by ${currentUser}`);
+                        } catch (error) {
+                            alert('Error importing data: Invalid file format');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+
+            const addRA = () => {
+                if (newRAName.trim()) {
+                    const newRA = {
+                        id: Date.now(),
+                        name: newRAName.trim(),
+                        email: '',
+                        phone: '',
+                        totalHours: 0,
+                        addedBy: currentUser,
+                        addedDate: new Date().toISOString()
+                    };
+                    const updatedRAs = [...ras, newRA];
+                    setRAs(updatedRAs);
+                    storage.set('ras', updatedRAs);
+                    logChange('RA Added', `Added new RA: ${newRA.name}`);
+                    setNewRAName('');
+                    setShowAddRA(false);
+                }
+            };
+
+            const removeRA = (id) => {
+                const ra = ras.find(r => r.id === id);
+                if (ra) {
+                    const updatedRAs = ras.filter(ra => ra.id !== id);
+                    const updatedShifts = shifts.filter(shift => shift.assignedRA !== id);
+
+                    setRAs(updatedRAs);
+                    setShifts(updatedShifts);
+                    storage.set('ras', updatedRAs);
+                    storage.set('shifts', updatedShifts);
+
+                    logChange('RA Removed', `Removed RA: ${ra.name} and all associated shifts`);
+                }
+            };
+
+            const addShift = () => {
+                if (newShift.day && newShift.startTime && newShift.endTime) {
+                    const hours = calculateHours(newShift.startTime, newShift.endTime);
+                    const shift = {
+                        id: Date.now(),
+                        day: newShift.day,
+                        startTime: newShift.startTime,
+                        endTime: newShift.endTime,
+                        hours: hours,
+                        assignedRA: newShift.assignedRA ? parseInt(newShift.assignedRA) : null,
+                        weekStart: selectedWeek.toISOString(),
+                        createdBy: currentUser,
+                        createdDate: new Date().toISOString()
+                    };
+                    const updatedShifts = [...shifts, shift];
+                    setShifts(updatedShifts);
+                    storage.set('shifts', updatedShifts);
+                    logChange('Shift Added', `Added shift: ${shift.day} ${shift.startTime}-${shift.endTime} (${hours.toFixed(1)}h)`);
+                    setNewShift({
+                        day: 'Monday',
+                        startTime: '09:00',
+                        endTime: '17:00',
+                        assignedRA: ''
+                    });
+                }
+            };
+            const removeShift = (id) => {
+                const shift = shifts.find(s => s.id === id);
+                if (shift) {
+                    const updatedShifts = shifts.filter(shift => shift.id !== id);
+                    setShifts(updatedShifts);
+                    storage.set('shifts', updatedShifts);
+                    logChange('Shift Removed', `Removed shift: ${shift.day} ${shift.startTime}-${shift.endTime}`);
+                }
+            };
+
+            const requestSwap = (fromShiftId, toShiftId, requestingRAId) => {
+                const swapRequest = {
+                    id: Date.now(),
+                    fromShiftId,
+                    toShiftId,
+                    requestingRAId,
+                    status: 'pending',
+                    requestDate: new Date().toISOString()
+                };
+                const updatedSwapRequests = [...swapRequests, swapRequest];
+                setSwapRequests(updatedSwapRequests);
+                storage.set('swapRequests', updatedSwapRequests);
+
+                const fromShift = shifts.find(s => s.id === fromShiftId);
+                const toShift = shifts.find(s => s.id === toShiftId);
+                const requestingRA = ras.find(r => r.id === requestingRAId);
+
+                if (fromShift && toShift && requestingRA) {
+                    logChange('Swap Requested', `${requestingRA.name} requested to swap ${fromShift.date} shift with ${toShift.date} shift`);
+                }
+            };
+
+            const handleSwapRequest = (requestId, action) => {
+                const request = swapRequests.find(r => r.id === requestId);
+                if (!request) return;
+
+                if (action === 'approve') {
+                    // Perform the swap
+                    const updatedShifts = shifts.map(shift => {
+                        if (shift.id === request.fromShiftId) {
+                            return { ...shift, assignedRA: shifts.find(s => s.id === request.toShiftId)?.assignedRA };
+                        }
+                        if (shift.id === request.toShiftId) {
+                            return { ...shift, assignedRA: shifts.find(s => s.id === request.fromShiftId)?.assignedRA };
+                        }
+                        return shift;
+                    });
+                    setShifts(updatedShifts);
+                    storage.set('shifts', updatedShifts);
+
+                    logChange('Swap Approved', `Swap request approved and shifts exchanged`);
+                } else {
+                    logChange('Swap Denied', `Swap request denied`);
+                }
+
+                // Update request status
+                const updatedSwapRequests = swapRequests.map(req =>
+                    req.id === requestId ? { ...req, status: action === 'approve' ? 'approved' : 'denied' } : req
+                );
+                setSwapRequests(updatedSwapRequests);
+                storage.set('swapRequests', updatedSwapRequests);
+            };
+
+            const getCurrentWeekShifts = () => {
+                return shifts.filter(shift => shift.weekStart === selectedWeek.toISOString());
+            };
+
+            const getRAHours = (raId) => {
+                return getCurrentWeekShifts()
+                    .filter(shift => shift.assignedRA === raId)
+                    .reduce((total, shift) => total + shift.hours, 0);
+            };
+
+            const getTotalTeamHours = () => {
+                return getCurrentWeekShifts().reduce((total, shift) => total + shift.hours, 0);
+            };
+
+            const clearChangeLog = () => {
+                setChangeLog([]);
+                storage.set('changeLog', []);
+                // Note: Don't log this action since we just cleared the log
+            };
+
+            const weekDays = getWeekDays(selectedWeek);
+            const currentWeekShifts = getCurrentWeekShifts();
+
+            return (
+                <div className="min-h-screen bg-gray-50 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                            {/* Header with Team Info */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <Calendar className="h-8 w-8 text-blue-600" />
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-gray-900">Team Scheduling Tool</h1>
+                                        <p className="text-sm text-gray-600">Team: {teamName} | User: {currentUser} | {ras.length} RAs</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={exportData}
+                                            className="flex items-center gap-2 px-3 py-2 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Export
+                                        </button>
+                                        <label className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 cursor-pointer">
+                                            <Upload className="h-4 w-4" />
+                                            Import
+                                            <input
+                                                type="file"
+                                                accept=".json"
+                                                onChange={importData}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowChangeLog(!showChangeLog)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Activity Log ({changeLog.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedWeek(getWeekStart(new Date(selectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000)))}
+                                        className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
+                                    >
+                                        ← Previous Week
+                                    </button>
+                                    <span className="font-medium text-gray-700">
+                                        Week of {formatDate(selectedWeek)}
+                                    </span>
+                                    <button
+                                        onClick={() => setSelectedWeek(getWeekStart(new Date(selectedWeek.getTime() + 7 * 24 * 60 * 60 * 1000)))}
+                                        className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
+                                    >
+                                        Next Week →
+                                    </button>
+                                </div>
+
+
+                                {/* Team Stats Summary */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                    <div className="bg-blue-50 rounded-lg p-4 text-center">
+                                        <div className="text-2xl font-bold text-blue-600">{ras.length}</div>
+                                        <div className="text-sm text-blue-800">Team Members</div>
+                                    </div>
+                                    <div className="bg-green-50 rounded-lg p-4 text-center">
+                                        <div className="text-2xl font-bold text-green-600">{currentWeekShifts.length}</div>
+                                        <div className="text-sm text-green-800">Shifts This Week</div>
+                                    </div>
+                                    <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                                        <div className="text-2xl font-bold text-yellow-600">{getTotalTeamHours().toFixed(1)}</div>
+                                        <div className="text-sm text-yellow-800">Total Hours</div>
+                                    </div>
+                                    <div className="bg-purple-50 rounded-lg p-4 text-center">
+                                        <div className="text-2xl font-bold text-purple-600">{swapRequests.length}</div>
+                                        <div className="text-sm text-purple-800">Pending Swaps</div>
+                                    </div>
+                                </div>
+
+                                {/* Change Log Panel */}
+                                {showChangeLog && (
+                                    <div className="mb-8 bg-gray-50 rounded-lg p-4">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-lg font-semibold text-gray-800">Team Activity Log</h2>
+                                            <button
+                                                onClick={clearChangeLog}
+                                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                                            >
+                                                Clear Log
+                                            </button>
+                                        </div>
+                                        <div className="max-h-64 overflow-y-auto space-y-2">
+                                            {changeLog.length === 0 ? (
+                                                <p className="text-gray-500 text-center py-4">No team activity recorded yet</p>
+                                            ) : (
+                                                changeLog.map(entry => (
+                                                    <div key={entry.id} className="bg-white rounded p-3 border-l-4 border-blue-400">
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <span className="font-medium text-blue-800">{entry.action}</span>
+                                                                <span className="text-xs text-gray-500 ml-2">by {entry.user}</span>
+                                                                <p className="text-gray-700 text-sm mt-1">{entry.details}</p>
+                                                            </div>
+                                                            <span className="text-xs text-gray-500 whitespace-nowrap ml-4">
+                                                                {formatDateTime(entry.timestamp)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* RA Management */}
+                            <div className="mb-8">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                        <Users className="h-5 w-5" />
+                                        Research Assistants ({ras.length}/20)
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowAddRA(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                        disabled={ras.length >= 20}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Add RA
+                                    </button>
+                                </div>
+
+                                {showAddRA && (
+                                    <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={newRAName}
+                                                onChange={(e) => setNewRAName(e.target.value)}
+                                                placeholder="RA Name"
+                                                className="flex-1 px-3 py-2 border rounded-md"
+                                                onKeyPress={(e) => e.key === 'Enter' && addRA()}
+                                            />
+                                            <button onClick={addRA} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                                Add
+                                            </button>
+                                            <button onClick={() => setShowAddRA(false)} className="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {ras.map(ra => (
+                                        <div key={ra.id} className="bg-gray-50 rounded-md p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="font-medium text-gray-900">{ra.name}</h3>
+                                                    <p className="text-sm text-gray-600">
+                                                        This week: {getRAHours(ra.id).toFixed(1)} hours
+                                                    </p>
+                                                    {ra.addedBy && (
+                                                        <p className="text-xs text-gray-500">Added by {ra.addedBy}</p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => removeRA(ra.id)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Shift Management */}
+                            <div className="mb-8">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                        <Clock className="h-5 w-5" />
+                                        Schedule Management
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowAddShift(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                        disabled={ras.length === 0}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Add Shift
+                                    </button>
+                                </div>
+
+                                {showAddShift && (
+                                    <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                            <select
+                                                value={newShift.day}
+                                                onChange={(e) => setNewShift({ ...newShift, day: e.target.value })}
+                                                className="px-3 py-2 border rounded-md"
+                                            >
+                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                                                    <option key={day} value={day}>{day}</option>
+                                                ))}
+                                            </select>
+                                            <input
+                                                type="time"
+                                                value={newShift.startTime}
+                                                onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
+                                                className="px-3 py-2 border rounded-md"
+                                            />
+                                            <input
+                                                type="time"
+                                                value={newShift.endTime}
+                                                onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
+                                                className="px-3 py-2 border rounded-md"
+                                            />
+                                            <select
+                                                value={newShift.assignedRA}
+                                                onChange={(e) => setNewShift({ ...newShift, assignedRA: e.target.value })}
+                                                className="px-3 py-2 border rounded-md"
+                                            >
+                                                <option value="">Select RA</option>
+                                                {ras.map(ra => (
+                                                    <option key={ra.id} value={ra.id}>{ra.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-4">
+                                            <button onClick={addShift} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                                Add Shift
+                                            </button>
+                                            <button onClick={() => setShowAddShift(false)} className="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500">
+                                                Cancel
+                                            </button>
+                                            <span className="text-sm text-gray-600 ml-4">
+                                                Duration: {calculateHours(newShift.startTime, newShift.endTime).toFixed(1)} hours
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Weekly Schedule Grid */}
+                                <div className="bg-white border rounded-lg overflow-hidden">
+                                    <div className="grid grid-cols-8 bg-gray-50 border-b">
+                                        <div className="p-3 font-medium text-gray-700">Time</div>
+                                        {weekDays.map(day => (
+                                            <div key={day.name} className="p-3 font-medium text-gray-700 text-center">
+                                                <div>{day.name}</div>
+                                                <div className="text-xs text-gray-500">{formatDate(day.date)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="min-h-96">
+                                        {currentWeekShifts.length === 0 ? (
+                                            <div className="p-8 text-center text-gray-500">
+                                                <Clock className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                                                <p>No shifts scheduled for this week</p>
+                                                <p className="text-sm">Add shifts to see the weekly schedule</p>
+                                            </div>
+                                        ) : (
+                                            <div className="p-4">
+                                                <div className="space-y-2">
+                                                    {currentWeekShifts.map(shift => {
+                                                        const ra = ras.find(r => r.id === shift.assignedRA);
+                                                        return (
+                                                            <div key={shift.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-md border-l-4 border-blue-400">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="font-medium text-blue-900">{shift.day}</div>
+                                                                    <div className="text-blue-700">{shift.startTime} - {shift.endTime}</div>
+                                                                    <div className="text-blue-600">({shift.hours.toFixed(1)}h)</div>
+                                                                    <div className="font-medium text-gray-900">{ra?.name || 'Unassigned'}</div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <select
+                                                                        onChange={(e) => {
+                                                                            if (e.target.value && e.target.value !== shift.assignedRA.toString()) {
+                                                                                requestSwap(shift.id, shift.assignedRA, parseInt(e.target.value));
+                                                                            }
+                                                                        }}
+                                                                        className="px-2 py-1 text-sm border rounded"
+                                                                        value=""
+                                                                    >
+                                                                        <option value="">Request Swap</option>
+                                                                        {ras.filter(r => r.id !== shift.assignedRA).map(ra => (
+                                                                            <option key={ra.id} value={ra.id}>Swap with {ra.name}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                    <button
+                                                                        onClick={() => removeShift(shift.id)}
+                                                                        className="text-red-500 hover:text-red-700"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Swap Requests Management */}
+                            {swapRequests.length > 0 && (
+                                <div className="mb-8">
+                                    <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                                        <Exchange className="h-5 w-5" />
+                                        Pending Swap Requests ({swapRequests.length})
+                                    </h2>
+                                    <div className="space-y-3">
+                                        {swapRequests.map(swapRequest => {
+                                            const fromShift = shifts.find(s => s.id === swapRequest.fromShiftId);
+                                            const toShift = shifts.find(s => s.id === swapRequest.toShiftId);
+                                            const fromRA = ras.find(r => r.id === fromShift?.assignedRA);
+                                            const toRA = ras.find(r => r.id === toShift?.assignedRA);
+
+                                            if (!fromShift || !toShift || !fromRA || !toRA) return null;
+
+                                            return (
+                                                <div key={swapRequest.id} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">
+                                                                Shift Swap Request
+                                                            </p>
+                                                            <p className="text-sm text-gray-700">
+                                                                {fromRA.name} wants to swap their shift on {fromShift.day} {fromShift.startTime}-{fromShift.endTime}
+                                                                ({fromShift.hours.toFixed(1)}h) with {toRA.name}'s shift on {toShift.day} {toShift.startTime}-{toShift.endTime}
+                                                                ({toShift.hours.toFixed(1)}h)
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">
+                                                                Requested on {formatDateTime(swapRequest.requestDate)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleSwapRequest(swapRequest.id, 'approve')}
+                                                                className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleSwapRequest(swapRequest.id, 'deny')}
+                                                                className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                                            >
+                                                                <XCircle className="h-4 w-4" />
+                                                                Deny
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        ReactDOM.render(<TeamSchedulingTool />, document.getElementById('root'));
+    </script>
+</body>
+
+</html>
