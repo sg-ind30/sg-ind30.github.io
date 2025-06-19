@@ -74,11 +74,58 @@
                 assignedRA2: ''
             });
 
-            // Load data from in-memory storage (localStorage removed)
+            // localStorage keys
+            const STORAGE_KEYS = {
+                RAS: 'ra-scheduling-ras',
+                SHIFTS: 'ra-scheduling-shifts',
+                SWAP_REQUESTS: 'ra-scheduling-swap-requests'
+            };
+
+            // Load data from localStorage
             useEffect(() => {
-                // Initial data would normally be loaded from a backend API
-                // For demo purposes, we'll start with empty arrays
+                try {
+                    const savedRAs = localStorage.getItem(STORAGE_KEYS.RAS);
+                    const savedShifts = localStorage.getItem(STORAGE_KEYS.SHIFTS);
+                    const savedSwapRequests = localStorage.getItem(STORAGE_KEYS.SWAP_REQUESTS);
+
+                    if (savedRAs) {
+                        setRAs(JSON.parse(savedRAs));
+                    }
+                    if (savedShifts) {
+                        setShifts(JSON.parse(savedShifts));
+                    }
+                    if (savedSwapRequests) {
+                        setSwapRequests(JSON.parse(savedSwapRequests));
+                    }
+                } catch (error) {
+                    console.error('Error loading data from localStorage:', error);
+                }
             }, []);
+
+            // Save data to localStorage whenever state changes
+            useEffect(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.RAS, JSON.stringify(ras));
+                } catch (error) {
+                    console.error('Error saving RAs to localStorage:', error);
+                }
+            }, [ras]);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
+                } catch (error) {
+                    console.error('Error saving shifts to localStorage:', error);
+                }
+            }, [shifts]);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.SWAP_REQUESTS, JSON.stringify(swapRequests));
+                } catch (error) {
+                    console.error('Error saving swap requests to localStorage:', error);
+                }
+            }, [swapRequests]);
 
             // Helper functions
             const getWeekDays = (date) => {
@@ -132,7 +179,8 @@
                         id: generateId(),
                         name: newRAName.trim(),
                         email: '',
-                        totalHours: 0
+                        totalHours: 0,
+                        createdAt: new Date().toISOString()
                     };
                     setRAs([...ras, newRA]);
                     setNewRAName('');
@@ -155,13 +203,14 @@
                 const weekKey = getWeekKey(currentWeek);
                 const shift = {
                     id: generateId(),
-                    weekKey: weekKey, // NEW: Store which week this shift belongs to
+                    weekKey: weekKey,
                     day: newShift.day,
                     startTime: newShift.startTime,
                     endTime: newShift.endTime,
                     hours: hours,
                     assignedRA1: newShift.assignedRA1 || '',
-                    assignedRA2: newShift.assignedRA2 || ''
+                    assignedRA2: newShift.assignedRA2 || '',
+                    createdAt: new Date().toISOString()
                 };
                 setShifts([...shifts, shift]);
                 setNewShift({
@@ -213,10 +262,22 @@
                 setCurrentWeek(newDate);
             };
 
+            // Clear all data function
+            const clearAllData = () => {
+                if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                    setRAs([]);
+                    setShifts([]);
+                    setSwapRequests([]);
+                    localStorage.removeItem(STORAGE_KEYS.RAS);
+                    localStorage.removeItem(STORAGE_KEYS.SHIFTS);
+                    localStorage.removeItem(STORAGE_KEYS.SWAP_REQUESTS);
+                }
+            };
+
             const weekDays = getWeekDays(currentWeek);
             const currentWeekKey = getWeekKey(currentWeek);
             
-            // MODIFIED: Only show shifts for the current week and workdays (Mon-Fri)
+            // Only show shifts for the current week and workdays (Mon-Fri)
             const workDays = weekDays.slice(0, 5); // Monday through Friday only
             const currentWeekShifts = shifts.filter(shift => shift.weekKey === currentWeekKey);
             
@@ -226,8 +287,18 @@
                 <div className="min-h-screen bg-gray-50 p-4">
                     <div className="max-w-7xl mx-auto">
                         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                            <h1 className="text-2xl font-bold text-gray-900 mb-2">RA Shift Scheduling Tool</h1>
-                            <p className="text-gray-600">Manage Research Assistant shifts and swap requests in CCDL! Each shift is specific to the week you're viewing.</p>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">RA Shift Scheduling Tool</h1>
+                                    <p className="text-gray-600">Manage Research Assistant shifts and swap requests in CCDL! Data is automatically saved to your browser.</p>
+                                </div>
+                                <button
+                                    onClick={clearAllData}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                                >
+                                    Clear All Data
+                                </button>
+                            </div>
                         </div>
 
                         {/* RA Management Section */}
@@ -537,30 +608,35 @@
                                         return (
                                             <div key={request.id} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                                                 <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">
-                                                            {requestingRA.name} requests to swap {shift.day} {shift.startTime}-{shift.endTime}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Requested {formatDateTime(request.requestDate)}
-                                                        </p>
+                                                    <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                            {requestingRA.name}
+                                                        </span>
+                                                        <span className="text-sm text-gray-500">wants to swap</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => handleSwapRequest(request.id, true)}
-                                                            className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                                                        >
-                                                            <CheckIcon />
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleSwapRequest(request.id, false)}
-                                                            className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                                                        >
-                                                            <XIcon />
-                                                            Deny
-                                                        </button>
+                                                    <div className="text-sm text-gray-600">
+                                                        {shift.day} {shift.startTime} - {shift.endTime}
                                                     </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        Requested: {formatDateTime(request.requestDate)}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleSwapRequest(request.id, true)}
+                                                        className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                                                    >
+                                                        <CheckIcon />
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSwapRequest(request.id, false)}
+                                                        className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                                                    >
+                                                        <XIcon />
+                                                        Deny
+                                                    </button>
                                                 </div>
                                             </div>
                                         );
