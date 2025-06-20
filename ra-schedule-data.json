@@ -173,9 +173,21 @@
       "assignedRA2": "",
       "createdAt": "2025-06-20T23:41:50.707Z",
       "createdBy": "Madhu"
+    },
+    {
+      "id": "1750462951506m9sq2m642",
+      "weekKey": "2025-06-23",
+      "day": "Monday",
+      "startTime": "09:00",
+      "endTime": "13:00",
+      "hours": 4,
+      "assignedRA1": "",
+      "assignedRA2": "1750444986429e3jp3cc1v",
+      "createdAt": "2025-06-20T23:42:31.506Z",
+      "createdBy": "Madhu"
     }
   ],
   "swapRequests": [],
-  "lastModified": 1750462930289,
+  "lastModified": 1750462953532,
   "lastModifiedBy": "Madhu"
 }
