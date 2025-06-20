@@ -79,10 +79,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T19:02:28.722Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "1750446159330uo5r0kqdx",
+      "name": "Hairuo",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T19:02:39.330Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446150732,
+  "lastModified": 1750446161339,
   "lastModifiedBy": "Shripad"
 }
