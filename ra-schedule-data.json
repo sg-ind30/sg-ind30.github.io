@@ -149,9 +149,21 @@
       "assignedRA2": "1750444979728n31pq0sbl",
       "createdAt": "2025-06-20T19:33:40.462Z",
       "createdBy": "Shripad "
+    },
+    {
+      "id": "17504480428288y9orcl8i",
+      "weekKey": "2025-06-16",
+      "day": "Monday",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "hours": 1,
+      "assignedRA1": "1750446115415bi7w9kf2z",
+      "assignedRA2": "1750444996625b97endiie",
+      "createdAt": "2025-06-20T19:34:02.828Z",
+      "createdBy": "Shripad "
     }
   ],
   "swapRequests": [],
-  "lastModified": 1750448022493,
+  "lastModified": 1750448044842,
   "lastModifiedBy": "Shripad "
 }
