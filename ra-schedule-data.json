@@ -47,10 +47,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T19:02:00.923Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "1750446125176mn68rvdo4",
+      "name": "Kaviya",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T19:02:05.176Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446122933,
+  "lastModified": 1750446127186,
   "lastModifiedBy": "Shripad"
 }
