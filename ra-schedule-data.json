@@ -157,13 +157,13 @@
       "startTime": "09:00",
       "endTime": "13:00",
       "hours": 4,
-      "assignedRA1": "",
+      "assignedRA1": "1750444996625b97endiie",
       "assignedRA2": "1750444986429e3jp3cc1v",
       "createdAt": "2025-06-20T23:42:31.506Z",
       "createdBy": "Madhu"
     }
   ],
   "swapRequests": [],
-  "lastModified": 1750463129056,
-  "lastModifiedBy": "Madhu"
+  "lastModified": 1750463132351,
+  "lastModifiedBy": "Shripad "
 }
