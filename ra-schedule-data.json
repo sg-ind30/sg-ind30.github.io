@@ -31,10 +31,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T18:43:16.625Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "1750446115415bi7w9kf2z",
+      "name": "Pumi",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T19:01:55.415Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446084258,
+  "lastModified": 1750446117426,
   "lastModifiedBy": "Shripad"
 }
