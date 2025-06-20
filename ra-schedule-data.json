@@ -135,18 +135,10 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T19:05:14.885Z",
       "createdBy": "Shripad"
-    },
-    {
-      "id": "1750446319226yohyc3nnq",
-      "name": "Newt",
-      "email": "",
-      "totalHours": 0,
-      "createdAt": "2025-06-20T19:05:19.226Z",
-      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446321235,
+  "lastModified": 1750446324105,
   "lastModifiedBy": "Shripad"
 }
