@@ -39,10 +39,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T19:01:55.415Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "17504461209236686r2img",
+      "name": "Nishtha",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T19:02:00.923Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446117426,
+  "lastModified": 1750446122933,
   "lastModifiedBy": "Shripad"
 }
