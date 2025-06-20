@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RA Shift Scheduling Tool</title>
+    <title> CCDL Research Assistants Shift Tracker </title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -15,7 +15,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // Icons as simple SVG components
         const PlusIcon = () => (
@@ -60,17 +60,221 @@
             </svg>
         );
 
-        const DownloadIcon = () => (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        const GitHubIcon = () => (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
         );
 
-        const UploadIcon = () => (
+        const ConnectedIcon = () => (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
             </svg>
         );
+
+        const DisconnectedIcon = () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728m0 0L12 12m-6.364 6.364L12 12m6.364-6.364L12 12" />
+            </svg>
+        );
+
+        const SettingsIcon = () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        );
+
+        // GitHub Storage Implementation
+        class GitHubStorage {
+            constructor() {
+                this.owner = ''; // GitHub username/organization
+                this.repo = ''; // Repository name
+                this.token = ''; // Personal Access Token
+                this.branch = 'main';
+                this.filePath = 'ra-schedule-data.json';
+                this.isConnected = false;
+                this.listeners = [];
+                this.pollInterval = 30000; // 30 seconds
+                this.lastCommitSha = null;
+                this.userName = '';
+            }
+
+            async initialize(config) {
+                this.owner = config.owner;
+                this.repo = config.repo;
+                this.token = config.token;
+                this.userName = config.userName || 'Anonymous';
+                
+                try {
+                    // Test connection by getting repository info
+                    const response = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}`, {
+                        headers: {
+                            'Authorization': `token ${this.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        this.isConnected = true;
+                        this.startPolling();
+                        return true;
+                    } else {
+                        throw new Error(`GitHub API Error: ${response.status} ${response.statusText}`);
+                    }
+                } catch (error) {
+                    console.error('GitHub initialization failed:', error);
+                    this.isConnected = false;
+                    return false;
+                }
+            }
+
+            startPolling() {
+                setInterval(() => {
+                    this.checkForUpdates();
+                }, this.pollInterval);
+            }
+
+            async checkForUpdates() {
+                if (!this.isConnected) return;
+
+                try {
+                    const response = await fetch(
+                        `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${this.filePath}`,
+                        {
+                            headers: {
+                                'Authorization': `token ${this.token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        }
+                    );
+
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        if (this.lastCommitSha && fileData.sha !== this.lastCommitSha) {
+                            // File has been updated, notify listeners
+                            const content = JSON.parse(atob(fileData.content));
+                            this.lastCommitSha = fileData.sha;
+                            this.listeners.forEach(listener => listener(content));
+                        } else if (!this.lastCommitSha) {
+                            this.lastCommitSha = fileData.sha;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking for updates:', error);
+                }
+            }
+
+            async save(data) {
+                if (!this.isConnected) return false;
+
+                try {
+                    // First, get the current file (if it exists) to get its SHA
+                    let currentSha = null;
+                    try {
+                        const getCurrentFile = await fetch(
+                            `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${this.filePath}`,
+                            {
+                                headers: {
+                                    'Authorization': `token ${this.token}`,
+                                    'Accept': 'application/vnd.github.v3+json'
+                                }
+                            }
+                        );
+                        if (getCurrentFile.ok) {
+                            const currentData = await getCurrentFile.json();
+                            currentSha = currentData.sha;
+                        }
+                    } catch (e) {
+                        // File might not exist yet, that's okay
+                    }
+
+                    // Prepare the commit data
+                    const commitData = {
+                        message: `Update RA schedule - ${new Date().toLocaleString()} by ${this.userName}`,
+                        content: btoa(JSON.stringify(data, null, 2)),
+                        branch: this.branch
+                    };
+
+                    if (currentSha) {
+                        commitData.sha = currentSha;
+                    }
+
+                    // Create or update the file
+                    const response = await fetch(
+                        `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${this.filePath}`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `token ${this.token}`,
+                                'Accept': 'application/vnd.github.v3+json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(commitData)
+                        }
+                    );
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.lastCommitSha = result.content.sha;
+                        return true;
+                    } else {
+                        const errorText = await response.text();
+                        throw new Error(`Failed to save: ${response.status} ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error('Error saving to GitHub:', error);
+                    return false;
+                }
+            }
+
+            async load() {
+                if (!this.isConnected) return null;
+
+                try {
+                    const response = await fetch(
+                        `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${this.filePath}`,
+                        {
+                            headers: {
+                                'Authorization': `token ${this.token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        }
+                    );
+
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        this.lastCommitSha = fileData.sha;
+                        return JSON.parse(atob(fileData.content));
+                    } else if (response.status === 404) {
+                        // File doesn't exist yet, return null
+                        return null;
+                    } else {
+                        throw new Error(`Failed to load: ${response.status} ${response.statusText}`);
+                    }
+                } catch (error) {
+                    console.error('Error loading from GitHub:', error);
+                    return null;
+                }
+            }
+
+            onUpdate(callback) {
+                this.listeners.push(callback);
+            }
+
+            disconnect() {
+                this.isConnected = false;
+                this.listeners = [];
+            }
+
+            getConnectionStatus() {
+                return {
+                    connected: this.isConnected,
+                    repo: `${this.owner}/${this.repo}`,
+                    user: this.userName
+                };
+            }
+        }
 
         const RASchedulingTool = () => {
             const [ras, setRAs] = useState([]);
@@ -88,78 +292,130 @@
                 assignedRA2: ''
             });
 
-            // localStorage keys
-            const STORAGE_KEYS = {
-                RAS: 'ra-scheduling-ras',
-                SHIFTS: 'ra-scheduling-shifts',
-                SWAP_REQUESTS: 'ra-scheduling-swap-requests'
-            };
+            // GitHub Configuration
+            const [showGitHubSetup, setShowGitHubSetup] = useState(false);
+            const [gitHubConfig, setGitHubConfig] = useState({
+                owner: '',
+                repo: '',
+                token: '',
+                userName: ''
+            });
+            const [isConnected, setIsConnected] = useState(false);
+            const [connectionStatus, setConnectionStatus] = useState('');
+            const [lastSyncTime, setLastSyncTime] = useState(null);
+            const [recentChanges, setRecentChanges] = useState([]);
+            const [isSaving, setIsSaving] = useState(false);
 
-            // Load data from localStorage on component mount
+            const gitHubStorage = useRef(new GitHubStorage());
+
+            // Load GitHub config from localStorage on mount
             useEffect(() => {
-                try {
-                    const savedRAs = localStorage.getItem(STORAGE_KEYS.RAS);
-                    const savedShifts = localStorage.getItem(STORAGE_KEYS.SHIFTS);
-                    const savedSwapRequests = localStorage.getItem(STORAGE_KEYS.SWAP_REQUESTS);
-
-                    if (savedRAs) {
-                        const parsedRAs = JSON.parse(savedRAs);
-                        if (Array.isArray(parsedRAs)) {
-                            setRAs(parsedRAs);
-                        }
-                    }
-                    if (savedShifts) {
-                        const parsedShifts = JSON.parse(savedShifts);
-                        if (Array.isArray(parsedShifts)) {
-                            setShifts(parsedShifts);
-                        }
-                    }
-                    if (savedSwapRequests) {
-                        const parsedSwapRequests = JSON.parse(savedSwapRequests);
-                        if (Array.isArray(parsedSwapRequests)) {
-                            setSwapRequests(parsedSwapRequests);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error loading data from localStorage:', error);
-                    // Clear corrupted data
-                    localStorage.removeItem(STORAGE_KEYS.RAS);
-                    localStorage.removeItem(STORAGE_KEYS.SHIFTS);
-                    localStorage.removeItem(STORAGE_KEYS.SWAP_REQUESTS);
+                const savedConfig = JSON.parse(window.localStorage.getItem('github-ra-config') || '{}');
+                if (savedConfig.owner && savedConfig.repo && savedConfig.token) {
+                    setGitHubConfig(savedConfig);
+                    initializeGitHub(savedConfig);
+                } else {
+                    setShowGitHubSetup(true);
                 }
             }, []);
 
-            // Save data to localStorage whenever state changes
-            useEffect(() => {
-                try {
-                    localStorage.setItem(STORAGE_KEYS.RAS, JSON.stringify(ras));
-                } catch (error) {
-                    console.error('Error saving RAs to localStorage:', error);
-                }
-            }, [ras]);
+            const initializeGitHub = async (config) => {
+                setConnectionStatus('Connecting to GitHub...');
+                const success = await gitHubStorage.current.initialize(config);
+                
+                if (success) {
+                    setIsConnected(true);
+                    setConnectionStatus('Connected to GitHub');
+                    
+                    // Load existing data
+                    const existingData = await gitHubStorage.current.load();
+                    if (existingData) {
+                        setRAs(existingData.ras || []);
+                        setShifts(existingData.shifts || []);
+                        setSwapRequests(existingData.swapRequests || []);
+                        setLastSyncTime(new Date());
+                        addRecentChange('Data loaded from GitHub');
+                    }
 
-            useEffect(() => {
-                try {
-                    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
-                } catch (error) {
-                    console.error('Error saving shifts to localStorage:', error);
-                }
-            }, [shifts]);
+                    // Listen for updates
+                    gitHubStorage.current.onUpdate((data) => {
+                        setRAs(data.ras || []);
+                        setShifts(data.shifts || []);
+                        setSwapRequests(data.swapRequests || []);
+                        setLastSyncTime(new Date());
+                        addRecentChange('Schedule updated by another user');
+                    });
 
-            useEffect(() => {
-                try {
-                    localStorage.setItem(STORAGE_KEYS.SWAP_REQUESTS, JSON.stringify(swapRequests));
-                } catch (error) {
-                    console.error('Error saving swap requests to localStorage:', error);
+                    // Save config to localStorage
+                    window.localStorage.setItem('github-ra-config', JSON.stringify(config));
+                } else {
+                    setIsConnected(false);
+                    setConnectionStatus('Failed to connect to GitHub');
+                    setShowGitHubSetup(true);
                 }
-            }, [swapRequests]);
+            };
+
+            const setupGitHub = async () => {
+                if (!gitHubConfig.owner || !gitHubConfig.repo || !gitHubConfig.token || !gitHubConfig.userName) {
+                    alert('Please fill in all GitHub configuration fields');
+                    return;
+                }
+
+                await initializeGitHub(gitHubConfig);
+                setShowGitHubSetup(false);
+            };
+
+            // Auto-save to GitHub when data changes
+            useEffect(() => {
+                if (isConnected && (ras.length > 0 || shifts.length > 0 || swapRequests.length > 0)) {
+                    const saveData = async () => {
+                        setIsSaving(true);
+                        try {
+                            const success = await gitHubStorage.current.save({
+                                ras,
+                                shifts,
+                                swapRequests,
+                                lastModified: Date.now(),
+                                lastModifiedBy: gitHubConfig.userName
+                            });
+                            
+                            if (success) {
+                                setLastSyncTime(new Date());
+                            } else {
+                                addRecentChange('Failed to save to GitHub');
+                            }
+                        } catch (error) {
+                            console.error('Save error:', error);
+                            addRecentChange('Error saving to GitHub');
+                        } finally {
+                            setIsSaving(false);
+                        }
+                    };
+                    
+                    const timeoutId = setTimeout(saveData, 2000); // Debounce saves
+                    return () => clearTimeout(timeoutId);
+                }
+            }, [ras, shifts, swapRequests, isConnected]);
+
+            const addRecentChange = (message) => {
+                const change = {
+                    id: Date.now(),
+                    message,
+                    timestamp: new Date()
+                };
+                setRecentChanges(prev => [change, ...prev.slice(0, 4)]);
+                
+                setTimeout(() => {
+                    setRecentChanges(prev => prev.filter(c => c.id !== change.id));
+                }, 15000);
+            };
 
             // Helper functions
             const getWeekDays = (date) => {
                 const week = [];
                 const startOfWeek = new Date(date);
                 const day = startOfWeek.getDay();
-                const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+                const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
                 startOfWeek.setDate(diff);
 
                 for (let i = 0; i < 7; i++) {
@@ -178,22 +434,18 @@
                 const day = startOfWeek.getDay();
                 const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
                 startOfWeek.setDate(diff);
-                return startOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD format
+                return startOfWeek.toISOString().split('T')[0];
             };
 
             const formatDate = (date) => {
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             };
 
-            const formatDateTime = (date) => {
-                return new Date(date).toLocaleString();
-            };
-
             const calculateHours = (startTime, endTime) => {
                 const start = new Date(`2000-01-01 ${startTime}`);
                 const end = new Date(`2000-01-01 ${endTime}`);
                 const hours = (end - start) / (1000 * 60 * 60);
-                return hours >= 0 ? hours : 0; // Prevent negative hours
+                return hours >= 0 ? hours : 0;
             };
 
             const generateId = () => {
@@ -208,26 +460,30 @@
                         name: newRAName.trim(),
                         email: '',
                         totalHours: 0,
-                        createdAt: new Date().toISOString()
+                        createdAt: new Date().toISOString(),
+                        createdBy: gitHubConfig.userName
                     };
                     setRAs([...ras, newRA]);
                     setNewRAName('');
                     setShowAddRA(false);
+                    addRecentChange(`Added RA: ${newRA.name}`);
                 }
             };
 
             const removeRA = (raId) => {
-                if (confirm('Are you sure you want to remove this RA? This will also remove them from all shifts.')) {
+                const ra = ras.find(r => r.id === raId);
+                if (confirm(`Are you sure you want to remove ${ra?.name}? This will also remove them from all shifts.`)) {
                     setRAs(ras.filter(ra => ra.id !== raId));
                     setShifts(shifts.map(shift => ({
                         ...shift,
                         assignedRA1: shift.assignedRA1 === raId ? '' : shift.assignedRA1,
                         assignedRA2: shift.assignedRA2 === raId ? '' : shift.assignedRA2
                     })));
+                    addRecentChange(`Removed RA: ${ra?.name}`);
                 }
             };
 
-            // Shift Management - Now week-specific with two RAs
+            // Shift Management
             const addShift = () => {
                 const hours = calculateHours(newShift.startTime, newShift.endTime);
 
@@ -246,7 +502,8 @@
                     hours: hours,
                     assignedRA1: newShift.assignedRA1 || '',
                     assignedRA2: newShift.assignedRA2 || '',
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    createdBy: gitHubConfig.userName
                 };
                 setShifts([...shifts, shift]);
                 setNewShift({
@@ -257,20 +514,25 @@
                     assignedRA2: ''
                 });
                 setShowAddShift(false);
+                addRecentChange(`Added shift: ${shift.day} ${shift.startTime}-${shift.endTime}`);
             };
 
             const removeShift = (shiftId) => {
+                const shift = shifts.find(s => s.id === shiftId);
                 if (confirm('Are you sure you want to remove this shift?')) {
                     setShifts(shifts.filter(shift => shift.id !== shiftId));
+                    addRecentChange(`Removed shift: ${shift?.day} ${shift?.startTime}-${shift?.endTime}`);
                 }
             };
 
             const updateShiftAssignment = (shiftId, raId, position) => {
+                const shift = shifts.find(s => s.id === shiftId);
+                const ra = ras.find(r => r.id === raId);
+                
                 setShifts(shifts.map(shift => {
                     if (shift.id === shiftId) {
                         const updatedShift = { ...shift, [position]: raId };
 
-                        // Prevent assigning same RA to both positions
                         if (raId && updatedShift.assignedRA1 === updatedShift.assignedRA2) {
                             const otherPosition = position === 'assignedRA1' ? 'assignedRA2' : 'assignedRA1';
                             updatedShift[otherPosition] = '';
@@ -280,6 +542,10 @@
                     }
                     return shift;
                 }));
+                
+                if (ra) {
+                    addRecentChange(`${gitHubConfig.userName} assigned ${ra.name} to ${shift?.day} ${shift?.startTime}-${shift?.endTime}`);
+                }
             };
 
             // Swap Request Management
@@ -289,16 +555,23 @@
                     shiftId: shiftId,
                     requestingRAId: requestingRAId,
                     requestDate: new Date().toISOString(),
-                    status: 'pending'
+                    status: 'pending',
+                    requestedBy: gitHubConfig.userName
                 };
                 setSwapRequests([...swapRequests, request]);
+                
+                const shift = shifts.find(s => s.id === shiftId);
+                const ra = ras.find(r => r.id === requestingRAId);
+                addRecentChange(`${ra?.name} requested swap for ${shift?.day} ${shift?.startTime}-${shift?.endTime}`);
             };
 
             const handleSwapRequest = (requestId, approved) => {
                 const request = swapRequests.find(r => r.id === requestId);
                 if (request && approved) {
-                    // For now, just mark as approved - you could implement actual swap logic here
                     alert('Swap request approved! Manual reassignment may be needed.');
+                    addRecentChange('Swap request approved');
+                } else {
+                    addRecentChange('Swap request denied');
                 }
                 setSwapRequests(swapRequests.filter(r => r.id !== requestId));
             };
@@ -310,449 +583,468 @@
                 setCurrentWeek(newDate);
             };
 
-            // Data Export/Import
-            const exportData = () => {
-                const data = {
-                    ras: ras,
-                    shifts: shifts,
-                    swapRequests: swapRequests,
-                    exportDate: new Date().toISOString()
-                };
-                const dataStr = JSON.stringify(data, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `ra-schedule-backup-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            };
-
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const data = JSON.parse(e.target.result);
-                            if (data.ras && data.shifts && Array.isArray(data.ras) && Array.isArray(data.shifts)) {
-                                if (confirm('This will replace all current data. Are you sure?')) {
-                                    setRAs(data.ras || []);
-                                    setShifts(data.shifts || []);
-                                    setSwapRequests(data.swapRequests || []);
-                                    alert('Data imported successfully!');
-                                }
-                            } else {
-                                alert('Invalid file format. Please ensure the file contains valid RA scheduling data.');
-                            }
-                        } catch (error) {
-                            alert('Error importing file: ' + error.message);
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-                event.target.value = ''; // Reset file input
-            };
-
-            // Clear all data function
-            const clearAllData = () => {
-                if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-                    setRAs([]);
-                    setShifts([]);
-                    setSwapRequests([]);
-                    localStorage.removeItem(STORAGE_KEYS.RAS);
-                    localStorage.removeItem(STORAGE_KEYS.SHIFTS);
-                    localStorage.removeItem(STORAGE_KEYS.SWAP_REQUESTS);
-                }
-            };
-
-            // Add sample data for testing
-
-
             const weekDays = getWeekDays(currentWeek);
             const currentWeekKey = getWeekKey(currentWeek);
-
-            // Only show shifts for the current week and workdays (Mon-Fri)
-            const workDays = weekDays.slice(0, 5); // Monday through Friday only
+            const workDays = weekDays.slice(0, 5);
             const currentWeekShifts = shifts.filter(shift => shift.weekKey === currentWeekKey);
-
             const pendingSwapRequests = swapRequests.filter(r => r.status === 'pending');
 
             return (
                 <div className="min-h-screen bg-gray-50 p-4">
                     <div className="max-w-7xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">RA Shift Scheduling Tool</h1>
-                                    <p className="text-gray-600">Manage Research Assistant shifts and swap requests. Data is automatically saved to your browser's local storage.</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="file"
-                                        accept=".json"
-                                        onChange={importData}
-                                        className="hidden"
-                                        id="import-file"
-                                    />
-                                    <label
-                                        htmlFor="import-file"
-                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer text-sm"
-                                    >
-                                        <UploadIcon />
-                                        Import
-                                    </label>
-                                    <button
-                                        onClick={exportData}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                                    >
-                                        <DownloadIcon />
-                                        Export
-                                    </button>
+                        {/* GitHub Setup Modal */}
+                        {showGitHubSetup && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                        <GitHubIcon />
+                                        GitHub Configuration
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Your Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="John Doe"
+                                                value={gitHubConfig.userName}
+                                                onChange={(e) => setGitHubConfig({...gitHubConfig, userName: e.target.value})}
+                                                className="w-full px-3 py-2 border rounded-md"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                GitHub Username/Organization
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="your-username"
+                                                value={gitHubConfig.owner}
+                                                onChange={(e) => setGitHubConfig({...gitHubConfig, owner: e.target.value})}
+                                                className="w-full px-3 py-2 border rounded-md"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Repository Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="ra-schedule-data"
+                                                value={gitHubConfig.repo}
+                                                
 
-                                    <button
-                                        onClick={clearAllData}
-                                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                                    >
-                                        Clear All Data
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title> CCDL Research Assistants Shift Tracker </title> <script src="https://unpkg.com/react@18/umd/react.development.js"></script> <script src="
 
-                        {/* RA Management Section */}
-                        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                    <UserIcon />
-                                    Research Assistants ({ras.length}/20)
-                                </h2>
-                                <button
-                                    onClick={() => setShowAddRA(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                >
-                                    <PlusIcon />
-                                    Add RA
-                                </button>
-                            </div>
+pasted
 
-                            {showAddRA && (
-                                <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="text"
-                                            placeholder="RA Name"
-                                            value={newRAName}
-                                            onChange={(e) => setNewRAName(e.target.value)}
-                                            className="flex-1 px-3 py-2 border rounded-md"
-                                            onKeyPress={(e) => e.key === 'Enter' && addRA()}
-                                        />
+can you only provide the missing portion to this code:
+
+Edit
+Looking at your code, it appears to be cut off in the middle of the GitHub configuration modal. Here's the missing portion to complete the code:
+
+
+RA Schedule Tool - Missing Portion
+Interactive artifact 
+This completes your RA Scheduling Tool code. The missing portion includes:
+
+Completion of the GitHub configuration modal - finishing the repository name input field and adding the Personal Access Token field
+Main application header - with GitHub connection status, settings button, and recent changes display
+RA Management section - for adding and removing research assistants
+Weekly Schedule Grid - the main scheduling interface with shift management
+Swap Requests panel - for handling shift swap requests
+All necessary event handlers and UI components to make the application fully functional
+The completed application provides a comprehensive shift scheduling system with GitHub integration for real-time collaboration, allowing multiple users to manage RA schedules simultaneously.
+
+
+
+
+
+
+
+onChange={(e) => setGitHubConfig({...gitHubConfig, repo: e.target.value})}
+                                                className="w-full px-3 py-2 border rounded-md"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Personal Access Token
+                                            </label>
+                                            <input
+                                                type="password"
+                                                placeholder="ghp_xxxxxxxxxxxx"
+                                                value={gitHubConfig.token}
+                                                onChange={(e) => setGitHubConfig({...gitHubConfig, token: e.target.value})}
+                                                className="w-full px-3 py-2 border rounded-md"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Create a token with 'repo' permissions at github.com/settings/tokens
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 mt-6">
                                         <button
-                                            onClick={addRA}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                            onClick={setupGitHub}
+                                            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-2"
                                         >
-                                            Add
+                                            <ConnectedIcon />
+                                            Connect
                                         </button>
                                         <button
-                                            onClick={() => setShowAddRA(false)}
-                                            className="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+                                            onClick={() => setShowGitHubSetup(false)}
+                                            className="px-4 py-2 border rounded-md hover:bg-gray-50"
                                         >
                                             Cancel
                                         </button>
                                     </div>
                                 </div>
-                            )}
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {ras.map(ra => {
-                                    // Calculate total hours for current week only
-                                    const raShifts = currentWeekShifts.filter(shift =>
-                                        shift.assignedRA1 === ra.id || shift.assignedRA2 === ra.id
-                                    );
-                                    const weeklyHours = raShifts.reduce((sum, shift) => sum + shift.hours, 0);
-
-                                    return (
-                                        <div key={ra.id} className="border rounded-lg p-3 bg-gray-50">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="font-medium text-gray-900 text-sm">{ra.name}</h3>
-                                                <button
-                                                    onClick={() => removeRA(ra.id)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <TrashIcon />
-                                                </button>
-                                            </div>
-                                            <p className="text-xs text-gray-600">
-                                                This Week: {weeklyHours.toFixed(1)}h
-                                            </p>
-                                            <p className="text-xs text-gray-600">
-                                                Shifts: {raShifts.length}
-                                            </p>
-                                        </div>
-                                    );
-                                })}
                             </div>
+                        )}
 
-                            {ras.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    No RAs added yet. Click "Add RA" to get started!
+                        {/* Header */}
+                        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">CCDL Research Assistants Shift Tracker</h1>
+                                    <p className="text-gray-600 mt-1">Manage shifts, track hours, and coordinate schedules</p>
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                    {/* GitHub Status */}
+                                    <div className="flex items-center gap-2 text-sm">
+                                        {isConnected ? (
+                                            <>
+                                                <ConnectedIcon className="text-green-500" />
+                                                <span className="text-green-700">Connected</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <DisconnectedIcon className="text-red-500" />
+                                                <span className="text-red-700">Disconnected</span>
+                                            </>
+                                        )}
+                                        {isSaving && <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>}
+                                    </div>
+                                    
+                                    <button
+                                        onClick={() => setShowGitHubSetup(true)}
+                                        className="flex items-center gap-2 px-3 py-2 border rounded-md hover:bg-gray-50"
+                                    >
+                                        <SettingsIcon />
+                                        Settings
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Connection Status & Recent Changes */}
+                            {(connectionStatus || recentChanges.length > 0) && (
+                                <div className="mt-4 pt-4 border-t">
+                                    {connectionStatus && (
+                                        <p className="text-sm text-gray-600">{connectionStatus}</p>
+                                    )}
+                                    {lastSyncTime && (
+                                        <p className="text-xs text-gray-500">
+                                            Last sync: {lastSyncTime.toLocaleTimeString()}
+                                        </p>
+                                    )}
+                                    {recentChanges.length > 0 && (
+                                        <div className="mt-2">
+                                            <h4 className="text-sm font-medium text-gray-700">Recent Changes:</h4>
+                                            <ul className="text-xs text-gray-600 space-y-1 mt-1">
+                                                {recentChanges.map(change => (
+                                                    <li key={change.id}>
+                                                        {change.message} - {change.timestamp.toLocaleTimeString()}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Schedule Management */}
-                        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                    <CalendarIcon />
-                                    Weekly Schedule
-                                </h2>
-                                <div className="flex items-center gap-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            {/* RA Management */}
+                            <div className="bg-white rounded-lg shadow-sm p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                                        <UserIcon />
+                                        Research Assistants
+                                    </h2>
                                     <button
-                                        onClick={() => navigateWeek(-1)}
-                                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                                    >
-                                        ← Previous Week
-                                    </button>
-                                    <span className="font-medium text-gray-900">
-                                        Week of {formatDate(weekDays[0].date)}
-                                    </span>
-                                    <button
-                                        onClick={() => navigateWeek(1)}
-                                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                                    >
-                                        Next Week →
-                                    </button>
-                                    <button
-                                        onClick={() => setShowAddShift(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                        onClick={() => setShowAddRA(true)}
+                                        className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
                                     >
                                         <PlusIcon />
-                                        Add Shift
                                     </button>
                                 </div>
-                            </div>
 
-                            {showAddShift && (
-                                <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-                                    <div className="bg-blue-50 p-3 rounded-lg mb-3">
-                                        <p className="text-sm text-blue-800">
-                                            Adding shift for week of {formatDate(weekDays[0].date)} - {formatDate(weekDays[6].date)}
-                                        </p>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-                                        <select
-                                            value={newShift.day}
-                                            onChange={(e) => setNewShift({ ...newShift, day: e.target.value })}
-                                            className="px-3 py-2 border rounded-md"
-                                        >
-                                            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
-                                                <option key={day} value={day}>{day}</option>
-                                            ))}
-                                        </select>
+                                {showAddRA && (
+                                    <div className="mb-4 p-3 border rounded-md bg-gray-50">
                                         <input
-                                            type="time"
-                                            value={newShift.startTime}
-                                            onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
-                                            className="px-3 py-2 border rounded-md"
+                                            type="text"
+                                            placeholder="RA Name"
+                                            value={newRAName}
+                                            onChange={(e) => setNewRAName(e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md mb-2"
+                                            onKeyPress={(e) => e.key === 'Enter' && addRA()}
                                         />
-                                        <input
-                                            type="time"
-                                            value={newShift.endTime}
-                                            onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
-                                            className="px-3 py-2 border rounded-md"
-                                        />
-                                        <select
-                                            value={newShift.assignedRA1}
-                                            onChange={(e) => setNewShift({ ...newShift, assignedRA1: e.target.value })}
-                                            className="px-3 py-2 border rounded-md"
-                                        >
-                                            <option value="">RA 1 - Unassigned</option>
-                                            {ras.map(ra => (
-                                                <option key={ra.id} value={ra.id}>{ra.name}</option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={newShift.assignedRA2}
-                                            onChange={(e) => setNewShift({ ...newShift, assignedRA2: e.target.value })}
-                                            className="px-3 py-2 border rounded-md"
-                                        >
-                                            <option value="">RA 2 - Unassigned</option>
-                                            {ras.map(ra => (
-                                                <option key={ra.id} value={ra.id}>{ra.name}</option>
-                                            ))}
-                                        </select>
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={addShift}
-                                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                                onClick={addRA}
+                                                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 flex items-center gap-1"
                                             >
+                                                <CheckIcon />
                                                 Add
                                             </button>
                                             <button
-                                                onClick={() => setShowAddShift(false)}
-                                                className="flex-1 px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+                                                onClick={() => {
+                                                    setShowAddRA(false);
+                                                    setNewRAName('');
+                                                }}
+                                                className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 flex items-center gap-1"
                                             >
+                                                <XIcon />
                                                 Cancel
                                             </button>
                                         </div>
                                     </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    {ras.map(ra => (
+                                        <div key={ra.id} className="flex items-center justify-between p-2 border rounded">
+                                            <span className="font-medium">{ra.name}</span>
+                                            <button
+                                                onClick={() => removeRA(ra.id)}
+                                                className="text-red-500 hover:bg-red-50 p-1 rounded"
+                                            >
+                                                <TrashIcon />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {ras.length === 0 && (
+                                        <p className="text-gray-500 text-sm text-center py-4">
+                                            No RAs added yet
+                                        </p>
+                                    )}
                                 </div>
-                            )}
-
-                            {/* Weekly Schedule Grid - Monday to Friday with 2 RA columns */}
-                            {/* Weekly Schedule Grid - Monday to Friday with 2 RA columns */}
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr className="bg-gray-100">
-                                            <th className="border border-gray-300 p-3 text-left font-medium text-gray-700">Day</th>
-                                            <th className="border border-gray-300 p-3 text-left font-medium text-gray-700">Time</th>
-                                            <th className="border border-gray-300 p-3 text-left font-medium text-gray-700">Hours</th>
-                                            <th className="border border-gray-300 p-3 text-left font-medium text-gray-700">RA 1</th>
-                                            <th className="border border-gray-300 p-3 text-left font-medium text-gray-700">RA 2</th>
-                                            <th className="border border-gray-300 p-3 text-left font-medium text-gray-700">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {workDays.map(day => {
-                                            const dayShifts = currentWeekShifts.filter(shift => shift.day === day.name);
-
-                                            if (dayShifts.length === 0) {
-                                                return (
-                                                    <tr key={day.name} className="hover:bg-gray-50">
-                                                        <td className="border border-gray-300 p-3 font-medium text-gray-700">
-                                                            {day.name}
-                                                            <div className="text-xs text-gray-500">{formatDate(day.date)}</div>
-                                                        </td>
-                                                        <td className="border border-gray-300 p-3 text-gray-500" colSpan="5">
-                                                            No shifts scheduled
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }
-
-                                            return dayShifts.map((shift, index) => (
-                                                <tr key={shift.id} className="hover:bg-gray-50">
-                                                    {index === 0 && (
-                                                        <td className="border border-gray-300 p-3 font-medium text-gray-700" rowSpan={dayShifts.length}>
-                                                            {day.name}
-                                                            <div className="text-xs text-gray-500">{formatDate(day.date)}</div>
-                                                        </td>
-                                                    )}
-                                                    <td className="border border-gray-300 p-3">
-                                                        <div className="text-sm font-medium">
-                                                            {shift.startTime} - {shift.endTime}
-                                                        </div>
-                                                    </td>
-                                                    <td className="border border-gray-300 p-3">
-                                                        <div className="text-sm">
-                                                            {shift.hours.toFixed(1)}h
-                                                        </div>
-                                                    </td>
-                                                    <td className="border border-gray-300 p-3">
-                                                        <select
-                                                            value={shift.assignedRA1}
-                                                            onChange={(e) => updateShiftAssignment(shift.id, e.target.value, 'assignedRA1')}
-                                                            className="w-full px-2 py-1 border rounded text-sm"
-                                                        >
-                                                            <option value="">Unassigned</option>
-                                                            {ras.map(ra => (
-                                                                <option key={ra.id} value={ra.id}>{ra.name}</option>
-                                                            ))}
-                                                        </select>
-                                                        {shift.assignedRA1 && (
-                                                            <button
-                                                                onClick={() => requestSwap(shift.id, shift.assignedRA1)}
-                                                                className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                                                            >
-                                                                Request Swap
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                    <td className="border border-gray-300 p-3">
-                                                        <select
-                                                            value={shift.assignedRA2}
-                                                            onChange={(e) => updateShiftAssignment(shift.id, e.target.value, 'assignedRA2')}
-                                                            className="w-full px-2 py-1 border rounded text-sm"
-                                                        >
-                                                            <option value="">Unassigned</option>
-                                                            {ras.map(ra => (
-                                                                <option key={ra.id} value={ra.id}>{ra.name}</option>
-                                                            ))}
-                                                        </select>
-                                                        {shift.assignedRA2 && (
-                                                            <button
-                                                                onClick={() => requestSwap(shift.id, shift.assignedRA2)}
-                                                                className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                                                            >
-                                                                Request Swap
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                    <td className="border border-gray-300 p-3">
-                                                        <button
-                                                            onClick={() => removeShift(shift.id)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                        >
-                                                            <TrashIcon />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ));
-                                        })}
-                                    </tbody>
-                                </table>
                             </div>
 
-                            {currentWeekShifts.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    No shifts scheduled for this week. Click "Add Shift" to get started!
+                            {/* Schedule Grid */}
+                            <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <h2 className="text-lg font-semibold flex items-center gap-2">
+                                            <CalendarIcon />
+                                            Weekly Schedule
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => navigateWeek(-1)}
+                                                className="px-3 py-1 border rounded hover:bg-gray-50"
+                                            >
+                                                ← Previous
+                                            </button>
+                                            <span className="text-sm font-medium">
+                                                Week of {formatDate(weekDays[0].date)}
+                                            </span>
+                                            <button
+                                                onClick={() => navigateWeek(1)}
+                                                className="px-3 py-1 border rounded hover:bg-gray-50"
+                                            >
+                                                Next →
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowAddShift(true)}
+                                        className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600"
+                                    >
+                                        <PlusIcon />
+                                    </button>
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Swap Requests Section */}
-                        {pendingSwapRequests.length > 0 && (
-                            <div className="bg-white rounded-lg shadow-sm border p-6">
-                                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                                {showAddShift && (
+                                    <div className="mb-6 p-4 border rounded-md bg-gray-50">
+                                        <h3 className="font-medium mb-3">Add New Shift</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <select
+                                                value={newShift.day}
+                                                onChange={(e) => setNewShift({...newShift, day: e.target.value})}
+                                                className="px-3 py-2 border rounded-md"
+                                            >
+                                                {workDays.map(day => (
+                                                    <option key={day.name} value={day.name}>{day.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="time"
+                                                    value={newShift.startTime}
+                                                    onChange={(e) => setNewShift({...newShift, startTime: e.target.value})}
+                                                    className="px-3 py-2 border rounded-md"
+                                                />
+                                                <input
+                                                    type="time"
+                                                    value={newShift.endTime}
+                                                    onChange={(e) => setNewShift({...newShift, endTime: e.target.value})}
+                                                    className="px-3 py-2 border rounded-md"
+                                                />
+                                            </div>
+                                            <select
+                                                value={newShift.assignedRA1}
+                                                onChange={(e) => setNewShift({...newShift, assignedRA1: e.target.value})}
+                                                className="px-3 py-2 border rounded-md"
+                                            >
+                                                <option value="">Select RA 1</option>
+                                                {ras.map(ra => (
+                                                    <option key={ra.id} value={ra.id}>{ra.name}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={newShift.assignedRA2}
+                                                onChange={(e) => setNewShift({...newShift, assignedRA2: e.target.value})}
+                                                className="px-3 py-2 border rounded-md"
+                                            >
+                                                <option value="">Select RA 2</option>
+                                                {ras.map(ra => (
+                                                    <option key={ra.id} value={ra.id}>{ra.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="flex gap-2 mt-3">
+                                            <button
+                                                onClick={addShift}
+                                                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
+                                            >
+                                                <CheckIcon />
+                                                Add Shift
+                                            </button>
+                                            <button
+                                                onClick={() => setShowAddShift(false)}
+                                                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2"
+                                            >
+                                                <XIcon />
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Schedule Grid */}
+                                <div className="grid grid-cols-5 gap-4">
+                                    {workDays.map(day => (
+                                        <div key={day.name} className="border rounded-lg p-3">
+                                            <div className="text-center mb-2">
+                                                <div className="font-medium text-gray-900">{day.name}</div>
+                                                <div className="text-sm text-gray-500">{formatDate(day.date)}</div>
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                                {currentWeekShifts
+                                                    .filter(shift => shift.day === day.name)
+                                                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                                                    .map(shift => (
+                                                        <div key={shift.id} className="bg-gray-50 p-2 rounded border">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-xs font-medium">
+                                                                    {shift.startTime} - {shift.endTime}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => removeShift(shift.id)}
+                                                                    className="text-red-500 hover:bg-red-50 p-1 rounded"
+                                                                >
+                                                                    <TrashIcon />
+                                                                </button>
+                                                            </div>
+                                                            
+                                                            <div className="space-y-1">
+                                                                <select
+                                                                    value={shift.assignedRA1}
+                                                                    onChange={(e) => updateShiftAssignment(shift.id, e.target.value, 'assignedRA1')}
+                                                                    className="w-full text-xs px-2 py-1 border rounded"
+                                                                >
+                                                                    <option value="">Select RA 1</option>
+                                                                    {ras.map(ra => (
+                                                                        <option key={ra.id} value={ra.id}>{ra.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <select
+                                                                    value={shift.assignedRA2}
+                                                                    onChange={(e) => updateShiftAssignment(shift.id, e.target.value, 'assignedRA2')}
+                                                                    className="w-full text-xs px-2 py-1 border rounded"
+                                                                >
+                                                                    <option value="">Select RA 2</option>
+                                                                    {ras.map(ra => (
+                                                                        <option key={ra.id} value={ra.id}>{ra.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            
+                                                            {(shift.assignedRA1 || shift.assignedRA2) && (
+                                                                <div className="mt-1 flex gap-1">
+                                                                    {shift.assignedRA1 && (
+                                                                        <button
+                                                                            onClick={() => requestSwap(shift.id, shift.assignedRA1)}
+                                                                            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                                                                        >
+                                                                            <ExchangeIcon className="w-3 h-3" />
+                                                                        </button>
+                                                                    )}
+                                                                    {shift.assignedRA2 && (
+                                                                        <button
+                                                                            onClick={() => requestSwap(shift.id, shift.assignedRA2)}
+                                                                            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                                                                        >
+                                                                            <ExchangeIcon className="w-3 h-3" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Swap Requests */}
+                            <div className="bg-white rounded-lg shadow-sm p-6">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                                     <ExchangeIcon />
-                                    Pending Swap Requests ({pendingSwapRequests.length})
+                                    Swap Requests
                                 </h2>
+                                
                                 <div className="space-y-3">
                                     {pendingSwapRequests.map(request => {
                                         const shift = shifts.find(s => s.id === request.shiftId);
-                                        const ra = ras.find(r => r.id === request.requestingRAId);
-
-                                        if (!shift || !ra) {
-                                            // Clean up invalid swap request
-                                            setSwapRequests(prev => prev.filter(r => r.id !== request.id));
-                                            return null;
-                                        }
-
+                                        const requestingRA = ras.find(r => r.id === request.requestingRAId);
+                                        
                                         return (
-                                            <div key={request.id} className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                                <div>
-                                                    <p className="font-medium text-gray-900">
-                                                        {ra.name} wants to swap {shift.day} {shift.startTime}-{shift.endTime}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        Requested: {formatDateTime(request.requestDate)}
-                                                    </p>
+                                            <div key={request.id} className="border rounded-lg p-3 bg-yellow-50">
+                                                <div className="text-sm">
+                                                    <div className="font-medium">{requestingRA?.name}</div>
+                                                    <div className="text-gray-600">
+                                                        {shift?.day} {shift?.startTime}-{shift?.endTime}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        Requested: {new Date(request.requestDate).toLocaleDateString()}
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex gap-2 mt-2">
                                                     <button
                                                         onClick={() => handleSwapRequest(request.id, true)}
-                                                        className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                                                        className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600 flex items-center gap-1"
                                                     >
                                                         <CheckIcon />
                                                         Approve
                                                     </button>
                                                     <button
                                                         onClick={() => handleSwapRequest(request.id, false)}
-                                                        className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                                                        className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 flex items-center gap-1"
                                                     >
                                                         <XIcon />
                                                         Deny
@@ -761,9 +1053,15 @@
                                             </div>
                                         );
                                     })}
+                                    
+                                    {pendingSwapRequests.length === 0 && (
+                                        <p className="text-gray-500 text-sm text-center py-4">
+                                            No pending swap requests
+                                        </p>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             );
@@ -772,5 +1070,4 @@
         ReactDOM.render(<RASchedulingTool />, document.getElementById('root'));
     </script>
 </body>
-
 </html>
