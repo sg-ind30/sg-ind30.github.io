@@ -33,20 +33,7 @@
       "createdBy": "Shripad"
     }
   ],
-  "shifts": [
-    {
-      "id": "1750445009671us1tyaiub",
-      "weekKey": "2025-06-16",
-      "day": "Monday",
-      "startTime": "13:00",
-      "endTime": "14:00",
-      "hours": 1,
-      "assignedRA1": "",
-      "assignedRA2": "1750444979728n31pq0sbl",
-      "createdAt": "2025-06-20T18:43:29.671Z",
-      "createdBy": "Shripad"
-    }
-  ],
+  "shifts": [],
   "swapRequests": [
     {
       "id": "1750445013579djdx2nytq",
@@ -65,6 +52,6 @@
       "requestedBy": "Shripad"
     }
   ],
-  "lastModified": 1750445841001,
+  "lastModified": 1750445844673,
   "lastModifiedBy": "Shripad"
 }
