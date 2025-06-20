@@ -137,8 +137,33 @@
       "createdBy": "Shripad"
     }
   ],
-  "shifts": [],
+  "shifts": [
+    {
+      "id": "17504479040265wlvuv6lc",
+      "weekKey": "2025-06-16",
+      "day": "Monday",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "hours": 1,
+      "assignedRA1": "1750444996625b97endiie",
+      "assignedRA2": "1750444979728n31pq0sbl",
+      "createdAt": "2025-06-20T19:31:44.026Z",
+      "createdBy": "Shripad"
+    },
+    {
+      "id": "1750447916404jud0zfb14",
+      "weekKey": "2025-06-16",
+      "day": "Monday",
+      "startTime": "10:00",
+      "endTime": "12:00",
+      "hours": 2,
+      "assignedRA1": "1750444986429e3jp3cc1v",
+      "assignedRA2": "1750444979728n31pq0sbl",
+      "createdAt": "2025-06-20T19:31:56.404Z",
+      "createdBy": "Shripad"
+    }
+  ],
   "swapRequests": [],
-  "lastModified": 1750447873020,
+  "lastModified": 1750447927890,
   "lastModifiedBy": "Shripad"
 }
