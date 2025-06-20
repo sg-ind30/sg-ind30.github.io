@@ -23,10 +23,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T18:43:06.429Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "1750444996625b97endiie",
+      "name": "Nevada",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T18:43:16.625Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750444988442,
+  "lastModified": 1750444998632,
   "lastModifiedBy": "Shripad"
 }
