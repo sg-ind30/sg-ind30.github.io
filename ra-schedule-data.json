@@ -146,7 +146,7 @@
       "endTime": "11:00",
       "hours": 2,
       "assignedRA1": "1750444979728n31pq0sbl",
-      "assignedRA2": "",
+      "assignedRA2": "17504449756940m33uz5g9",
       "createdAt": "2025-06-20T23:41:50.707Z",
       "createdBy": "Madhu"
     },
@@ -164,6 +164,6 @@
     }
   ],
   "swapRequests": [],
-  "lastModified": 1750463113648,
+  "lastModified": 1750463125743,
   "lastModifiedBy": "Shripad "
 }
