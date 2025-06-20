@@ -7,10 +7,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T18:42:55.694Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "1750444979728n31pq0sbl",
+      "name": "Madhu",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T18:42:59.728Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750444977716,
+  "lastModified": 1750444981736,
   "lastModifiedBy": "Shripad"
 }
