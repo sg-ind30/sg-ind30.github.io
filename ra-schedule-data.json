@@ -95,10 +95,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T19:02:44.202Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "17504462620019qs7n91d0",
+      "name": "Sarah W",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T19:04:22.001Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446166215,
+  "lastModified": 1750446264006,
   "lastModifiedBy": "Shripad"
 }
