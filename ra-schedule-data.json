@@ -34,16 +34,7 @@
     }
   ],
   "shifts": [],
-  "swapRequests": [
-    {
-      "id": "1750445014584ng8d63e3j",
-      "shiftId": "1750445009671us1tyaiub",
-      "requestingRAId": "1750444979728n31pq0sbl",
-      "requestDate": "2025-06-20T18:43:34.584Z",
-      "status": "pending",
-      "requestedBy": "Shripad"
-    }
-  ],
-  "lastModified": 1750445848490,
+  "swapRequests": [],
+  "lastModified": 1750445851693,
   "lastModifiedBy": "Shripad"
 }
