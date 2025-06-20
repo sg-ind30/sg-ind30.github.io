@@ -137,8 +137,21 @@
       "createdBy": "Shripad"
     }
   ],
-  "shifts": [],
+  "shifts": [
+    {
+      "id": "17504480204621wjh5vwil",
+      "weekKey": "2025-06-16",
+      "day": "Monday",
+      "startTime": "08:00",
+      "endTime": "10:00",
+      "hours": 2,
+      "assignedRA1": "17504449756940m33uz5g9",
+      "assignedRA2": "1750444979728n31pq0sbl",
+      "createdAt": "2025-06-20T19:33:40.462Z",
+      "createdBy": "Shripad "
+    }
+  ],
   "swapRequests": [],
-  "lastModified": 1750448009482,
+  "lastModified": 1750448022493,
   "lastModifiedBy": "Shripad "
 }
