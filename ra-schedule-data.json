@@ -119,10 +119,18 @@
       "totalHours": 0,
       "createdAt": "2025-06-20T19:04:51.044Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "17504463102529741hbehi",
+      "name": "Nil",
+      "email": "",
+      "totalHours": 0,
+      "createdAt": "2025-06-20T19:05:10.252Z",
+      "createdBy": "Shripad"
     }
   ],
   "shifts": [],
   "swapRequests": [],
-  "lastModified": 1750446293054,
+  "lastModified": 1750446312264,
   "lastModifiedBy": "Shripad"
 }
