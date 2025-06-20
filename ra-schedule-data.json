@@ -42,12 +42,29 @@
       "endTime": "14:00",
       "hours": 1,
       "assignedRA1": "17504449756940m33uz5g9",
-      "assignedRA2": "",
+      "assignedRA2": "1750444979728n31pq0sbl",
       "createdAt": "2025-06-20T18:43:29.671Z",
       "createdBy": "Shripad"
     }
   ],
-  "swapRequests": [],
-  "lastModified": 1750445011699,
+  "swapRequests": [
+    {
+      "id": "1750445013579djdx2nytq",
+      "shiftId": "1750445009671us1tyaiub",
+      "requestingRAId": "17504449756940m33uz5g9",
+      "requestDate": "2025-06-20T18:43:33.579Z",
+      "status": "pending",
+      "requestedBy": "Shripad"
+    },
+    {
+      "id": "1750445014584ng8d63e3j",
+      "shiftId": "1750445009671us1tyaiub",
+      "requestingRAId": "1750444979728n31pq0sbl",
+      "requestDate": "2025-06-20T18:43:34.584Z",
+      "status": "pending",
+      "requestedBy": "Shripad"
+    }
+  ],
+  "lastModified": 1750445016595,
   "lastModifiedBy": "Shripad"
 }
