@@ -173,6 +173,18 @@
       "assignedRA2": "1750446115415bi7w9kf2z",
       "createdAt": "2025-06-20T23:49:10.129Z",
       "createdBy": "Shripad"
+    },
+    {
+      "id": "1751473049102bik9juaca",
+      "weekKey": "2025-06-30",
+      "day": "Monday",
+      "startTime": "08:00",
+      "endTime": "17:00",
+      "hours": 9,
+      "assignedRA1": "1750444979728n31pq0sbl",
+      "assignedRA2": "1750444996625b97endiie",
+      "createdAt": "2025-07-02T16:17:29.102Z",
+      "createdBy": "Shripad Guntur"
     }
   ],
   "swapRequests": [
@@ -185,6 +197,6 @@
       "requestedBy": "Shripad"
     }
   ],
-  "lastModified": 1751473043150,
+  "lastModified": 1751473051128,
   "lastModifiedBy": "Shripad Guntur"
 }
