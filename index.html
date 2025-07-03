@@ -56,17 +56,19 @@
             const [showSwapDialog, setShowSwapDialog] = useState(false);
             const [swapDialogData, setSwapDialogData] = useState(null);
 
-            // Time slots from 8 AM to 5 PM
+            // 30-minute time slots from 8 AM to 5 PM
             const timeSlots = [
-                '08:00', '09:00', '10:00', '11:00', '12:00', 
-                '13:00', '14:00', '15:00', '16:00', '17:00'
+                '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+                '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+                '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+                '17:00'
             ];
 
             const formatTime = (time) => {
-                const hour = parseInt(time.split(':')[0]);
+                const [hour, minute] = time.split(':').map(Number);
                 const ampm = hour >= 12 ? 'PM' : 'AM';
                 const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                return `${displayHour}:00 ${ampm}`;
+                return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
             };
 
             // Helper functions
@@ -119,7 +121,7 @@
                         const shiftKey = `${weekKey}-${day.key}-${time}`;
                         const shift = shifts[shiftKey];
                         if (shift && (shift.ra1 === raId || shift.ra2 === raId)) {
-                            totalHours += 1;
+                            totalHours += 0.5; // 30 minutes = 0.5 hours
                         }
                     });
                 });
@@ -263,7 +265,7 @@
                                 CCDL Research Assistants Shift Tracker
                             </h1>
                             <p className="text-gray-600">
-                                Research Assistants can add their names and schedule their shifts
+                                Research Assistants can add their names and schedule their shifts (30-minute intervals)
                             </p>
                         </div>
 
@@ -415,7 +417,7 @@
                                                             
                                                             return (
                                                                 <td key={day.key} className="border border-gray-300 p-1">
-                                                                    <div className="grid grid-cols-2 gap-1 h-16">
+                                                                    <div className="grid grid-cols-2 gap-1 h-14">
                                                                         {/* RA 1 Column */}
                                                                         <div className="flex flex-col">
                                                                             <select
