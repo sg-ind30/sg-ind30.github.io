@@ -76,6 +76,12 @@
             </svg>
         );
 
+        const AlertIcon = () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+        );
+
         const RAShiftTracker = () => {
             const [ras, setRAs] = useState([]);
             const [shifts, setShifts] = useState({});
@@ -158,12 +164,11 @@
                 };
             }, [firebaseInitialized]);
 
-            // 30-minute time slots from 8 AM to 5 PM
+            // 30-minute time slots from 9 AM to 5 PM
             const timeSlots = [
-                '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-                '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-                '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-                '17:00'
+                '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+                '15:00', '15:30', '16:00', '16:30', '17:00'
             ];
 
             const formatTime = (time) => {
@@ -222,13 +227,23 @@
                     timeSlots.forEach(time => {
                         const shiftKey = `${weekKey}-${day.key}-${time}`;
                         const shift = shifts[shiftKey];
-                        if (shift && (shift.ra1 === raId || shift.ra2 === raId)) {
-                            totalHours += 0.5;
+                        if (shift) {
+                            ['ra1', 'ra2', 'ra3', 'ra4'].forEach(position => {
+                                if (shift[position] === raId) {
+                                    totalHours += 0.5;
+                                }
+                            });
                         }
                     });
                 });
 
                 return totalHours;
+            };
+
+            // Check if RA can be assigned to a shift (9 hour limit)
+            const canRABeAssigned = (raId) => {
+                const currentHours = calculateRAHours(raId);
+                return currentHours < 9;
             };
 
             // Firebase operations
@@ -264,12 +279,18 @@
                         const updates = {};
                         Object.keys(shifts).forEach(shiftKey => {
                             const shift = shifts[shiftKey];
-                            if (shift.ra1 === raId || shift.ra2 === raId) {
-                                const updatedShift = { ...shift };
-                                if (updatedShift.ra1 === raId) updatedShift.ra1 = '';
-                                if (updatedShift.ra2 === raId) updatedShift.ra2 = '';
+                            let updated = false;
+                            const updatedShift = { ...shift };
+                            
+                            ['ra1', 'ra2', 'ra3', 'ra4'].forEach(position => {
+                                if (updatedShift[position] === raId) {
+                                    updatedShift[position] = '';
+                                    updated = true;
+                                }
+                            });
 
-                                if (!updatedShift.ra1 && !updatedShift.ra2) {
+                            if (updated) {
+                                if (!updatedShift.ra1 && !updatedShift.ra2 && !updatedShift.ra3 && !updatedShift.ra4) {
                                     updates[`shifts/${shiftKey}`] = null;
                                 } else {
                                     updates[`shifts/${shiftKey}`] = updatedShift;
@@ -295,25 +316,32 @@
             const updateShift = async (dayKey, timeSlot, position, raId) => {
                 if (!window.firebase) return;
 
+                // Check if RA can be assigned (9 hour limit)
+                if (raId && !canRABeAssigned(raId)) {
+                    alert('This RA has already reached the 9-hour weekly limit.');
+                    return;
+                }
+
                 const { database, ref, set, remove } = window.firebase;
                 const weekKey = getWeekKey(currentWeek);
                 const shiftKey = `${weekKey}-${dayKey}-${timeSlot}`;
 
-                const currentShift = shifts[shiftKey] || { ra1: '', ra2: '' };
+                const currentShift = shifts[shiftKey] || { ra1: '', ra2: '', ra3: '', ra4: '' };
                 const updatedShift = { ...currentShift };
 
-                // Prevent same RA from being assigned to both positions
-                if (position === 'ra1' && updatedShift.ra2 === raId) {
-                    updatedShift.ra2 = '';
-                }
-                if (position === 'ra2' && updatedShift.ra1 === raId) {
-                    updatedShift.ra1 = '';
+                // Prevent same RA from being assigned to multiple positions in the same shift
+                if (raId) {
+                    ['ra1', 'ra2', 'ra3', 'ra4'].forEach(pos => {
+                        if (pos !== position && updatedShift[pos] === raId) {
+                            updatedShift[pos] = '';
+                        }
+                    });
                 }
 
                 updatedShift[position] = raId;
 
                 try {
-                    if (!updatedShift.ra1 && !updatedShift.ra2) {
+                    if (!updatedShift.ra1 && !updatedShift.ra2 && !updatedShift.ra3 && !updatedShift.ra4) {
                         await remove(ref(database, `shifts/${shiftKey}`));
                     } else {
                         await set(ref(database, `shifts/${shiftKey}`), updatedShift);
@@ -364,7 +392,7 @@
                                 const updatedShift = { ...currentShift };
                                 updatedShift[request.position] = '';
 
-                                if (!updatedShift.ra1 && !updatedShift.ra2) {
+                                if (!updatedShift.ra1 && !updatedShift.ra2 && !updatedShift.ra3 && !updatedShift.ra4) {
                                     await remove(ref(database, `shifts/${shiftKey}`));
                                 } else {
                                     await set(ref(database, `shifts/${shiftKey}`), updatedShift);
@@ -429,9 +457,15 @@
                                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                                         CCDL Research Assistants Shift Tracker
                                     </h1>
-                                    <p className="text-gray-600">
+                                    <p className="text-gray-600 mb-2">
                                         Please add your name and when you can work.
                                         If you need to swap shifts try to state why and if it is a last-minute change!
+                                    </p>
+                                    <p className="text-sm text-amber-600 font-medium">
+                                        <span className="inline-flex items-center gap-1">
+                                            <AlertIcon />
+                                            Maximum 9 hours per week per RA
+                                        </span>
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -463,25 +497,35 @@
                                     </div>
 
                                     <div className="space-y-3">
-                                        {ras.map(ra => (
-                                            <div key={ra.id} className="p-3 bg-gray-50 rounded-md">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <div className="font-medium">{ra.name}</div>
-                                                        <div className="text-sm text-gray-600">
-                                                            {calculateRAHours(ra.id)} hours this week
+                                        {ras.map(ra => {
+                                            const currentHours = calculateRAHours(ra.id);
+                                            const isAtLimit = currentHours >= 9;
+                                            
+                                            return (
+                                                <div key={ra.id} className="p-3 bg-gray-50 rounded-md">
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium">{ra.name}</div>
+                                                            <div className={`text-sm ${isAtLimit ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                                                                {currentHours}/9 hours this week
+                                                                {isAtLimit && (
+                                                                    <span className="ml-1 text-xs bg-red-100 text-red-800 px-1 rounded">
+                                                                        AT LIMIT
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
+                                                        <button
+                                                            onClick={() => removeRA(ra.id)}
+                                                            className="p-1 text-red-600 hover:bg-red-100 rounded text-xs"
+                                                            title="Remove"
+                                                        >
+                                                            <XIcon />
+                                                        </button>
                                                     </div>
-                                                    <button
-                                                        onClick={() => removeRA(ra.id)}
-                                                        className="p-1 text-red-600 hover:bg-red-100 rounded text-xs"
-                                                        title="Remove"
-                                                    >
-                                                        <XIcon />
-                                                    </button>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
 
                                         {ras.length === 0 && (
                                             <p className="text-gray-500 text-center py-4">
@@ -587,21 +631,25 @@
                                                         {weekDays.map(day => {
                                                             const weekKey = getWeekKey(currentWeek);
                                                             const shiftKey = `${weekKey}-${day.key}-${timeSlot}`;
-                                                            const shift = shifts[shiftKey] || { ra1: '', ra2: '' };
+                                                            const shift = shifts[shiftKey] || { ra1: '', ra2: '', ra3: '', ra4: '' };
 
                                                             return (
                                                                 <td key={day.key} className="border border-gray-300 p-1">
-                                                                    <div className="grid grid-cols-2 gap-1 h-14">
-                                                                        {/* RA 1 Column */}
+                                                                    <div className="grid grid-cols-2 gap-1 min-h-[100px]">
+                                                                        {/* RA 1 */}
                                                                         <div className="flex flex-col">
                                                                             <select
                                                                                 value={shift.ra1}
                                                                                 onChange={(e) => updateShift(day.key, timeSlot, 'ra1', e.target.value)}
-                                                                                className="text-xs p-1 border rounded w-full"
+                                                                                className="text-xs p-1 border rounded w-full mb-1"
                                                                             >
                                                                                 <option value="">RA 1</option>
                                                                                 {ras.map(ra => (
-                                                                                    <option key={ra.id} value={ra.id}>
+                                                                                    <option 
+                                                                                        key={ra.id} 
+                                                                                        value={ra.id}
+                                                                                        disabled={shift.ra1 !== ra.id && !canRABeAssigned(ra.id)}
+                                                                                    >
                                                                                         {ra.name}
                                                                                     </option>
                                                                                 ))}
@@ -609,7 +657,7 @@
                                                                             {shift.ra1 && (
                                                                                 <button
                                                                                     onClick={() => requestSwap(day.key, timeSlot, shift.ra1, 'ra1')}
-                                                                                    className="mt-1 p-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+                                                                                    className="text-xs px-1 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
                                                                                     title="Request swap"
                                                                                 >
                                                                                     <ExchangeIcon />
@@ -617,16 +665,20 @@
                                                                             )}
                                                                         </div>
 
-                                                                        {/* RA 2 Column */}
+                                                                        {/* RA 2 */}
                                                                         <div className="flex flex-col">
                                                                             <select
                                                                                 value={shift.ra2}
                                                                                 onChange={(e) => updateShift(day.key, timeSlot, 'ra2', e.target.value)}
-                                                                                className="text-xs p-1 border rounded w-full"
+                                                                                className="text-xs p-1 border rounded w-full mb-1"
                                                                             >
                                                                                 <option value="">RA 2</option>
                                                                                 {ras.map(ra => (
-                                                                                    <option key={ra.id} value={ra.id}>
+                                                                                    <option 
+                                                                                        key={ra.id} 
+                                                                                        value={ra.id}
+                                                                                        disabled={shift.ra2 !== ra.id && !canRABeAssigned(ra.id)}
+                                                                                    >
                                                                                         {ra.name}
                                                                                     </option>
                                                                                 ))}
@@ -634,7 +686,65 @@
                                                                             {shift.ra2 && (
                                                                                 <button
                                                                                     onClick={() => requestSwap(day.key, timeSlot, shift.ra2, 'ra2')}
-                                                                                    className="mt-1 p-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+                                                                                    className="text-xs px-1 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                                                                                    title="Request swap"
+                                                                                >
+                                                                                    <ExchangeIcon />
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* RA 3 */}
+                                                                        <div className="flex flex-col">
+                                                                            <select
+                                                                                value={shift.ra3}
+                                                                                onChange={(e) => updateShift(day.key, timeSlot, 'ra3', e.target.value)}
+                                                                                className="text-xs p-1 border rounded w-full mb-1"
+                                                                            >
+                                                                                <option value="">RA 3</option>
+                                                                                {ras.map(ra => (
+                                                                                    <option 
+                                                                                        key={ra.id} 
+                                                                                        value={ra.id}
+                                                                                        disabled={shift.ra3 !== ra.id && !canRABeAssigned(ra.id)}
+                                                                                    >
+                                                                                        {ra.name}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                            {shift.ra3 && (
+                                                                                <button
+                                                                                    onClick={() => requestSwap(day.key, timeSlot, shift.ra3, 'ra3')}
+                                                                                    className="text-xs px-1 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                                                                                    title="Request swap"
+                                                                                >
+                                                                                    <ExchangeIcon />
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* RA 4 */}
+                                                                        <div className="flex flex-col">
+                                                                            <select
+                                                                                value={shift.ra4}
+                                                                                onChange={(e) => updateShift(day.key, timeSlot, 'ra4', e.target.value)}
+                                                                                className="text-xs p-1 border rounded w-full mb-1"
+                                                                            >
+                                                                                <option value="">RA 4</option>
+                                                                                {ras.map(ra => (
+                                                                                    <option 
+                                                                                        key={ra.id} 
+                                                                                        value={ra.id}
+                                                                                        disabled={shift.ra4 !== ra.id && !canRABeAssigned(ra.id)}
+                                                                                    >
+                                                                                        {ra.name}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                            {shift.ra4 && (
+                                                                                <button
+                                                                                    onClick={() => requestSwap(day.key, timeSlot, shift.ra4, 'ra4')}
+                                                                                    className="text-xs px-1 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
                                                                                     title="Request swap"
                                                                                 >
                                                                                     <ExchangeIcon />
@@ -657,28 +767,29 @@
 
                     {/* Add RA Modal */}
                     {showAddRA && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                                <h2 className="text-xl font-bold mb-4">Add Research Assistant</h2>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Your Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={newRAName}
-                                        onChange={(e) => setNewRAName(e.target.value)}
-                                        placeholder="Enter your name"
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        autoFocus
-                                    />
-                                </div>
+                                <h3 className="text-lg font-semibold mb-4">Add Research Assistant</h3>
+                                <input
+                                    type="text"
+                                    placeholder="Enter RA name"
+                                    value={newRAName}
+                                    onChange={(e) => setNewRAName(e.target.value)}
+                                    className="w-full p-3 border rounded-md mb-4"
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            addRA();
+                                        }
+                                    }}
+                                    autoFocus
+                                />
                                 <div className="flex gap-3">
                                     <button
                                         onClick={addRA}
                                         className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                        disabled={!newRAName.trim()}
                                     >
-                                        Add
+                                        Add RA
                                     </button>
                                     <button
                                         onClick={() => {
@@ -696,36 +807,28 @@
 
                     {/* Swap Request Modal */}
                     {showSwapDialog && swapDialogData && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                                <h2 className="text-xl font-bold mb-4">Request Shift Swap</h2>
+                                <h3 className="text-lg font-semibold mb-4">Request Shift Swap</h3>
                                 <div className="mb-4">
-                                    <p className="text-sm text-gray-600 mb-2">
-                                        Requesting to swap shift for:
-                                    </p>
-                                    <div className="p-3 bg-gray-50 rounded-md">
-                                        <div className="font-medium">{swapDialogData.raName}</div>
-                                        <div className="text-sm text-gray-600">
-                                            {swapDialogData.dayName} {swapDialogData.date} at {swapDialogData.time}
-                                        </div>
+                                    <div className="text-sm text-gray-600 mb-2">
+                                        <strong>RA:</strong> {swapDialogData.raName}
+                                    </div>
+                                    <div className="text-sm text-gray-600 mb-2">
+                                        <strong>Shift:</strong> {swapDialogData.dayName} {swapDialogData.date} at {swapDialogData.time}
                                     </div>
                                 </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Reason for swap (optional)
-                                    </label>
-                                    <textarea
-                                        value={swapMessage}
-                                        onChange={(e) => setSwapMessage(e.target.value)}
-                                        placeholder="Please explain why you need to swap this shift..."
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        rows="3"
-                                    />
-                                </div>
+                                <textarea
+                                    placeholder="Optional: Explain why you need to swap this shift..."
+                                    value={swapMessage}
+                                    onChange={(e) => setSwapMessage(e.target.value)}
+                                    className="w-full p-3 border rounded-md mb-4"
+                                    rows="3"
+                                />
                                 <div className="flex gap-3">
                                     <button
                                         onClick={submitSwapRequest}
-                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                        className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
                                     >
                                         Submit Request
                                     </button>
@@ -747,9 +850,11 @@
             );
         };
 
-        // Render the app
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<RAShiftTracker />);
+        const App = () => {
+            return <RAShiftTracker />;
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 
